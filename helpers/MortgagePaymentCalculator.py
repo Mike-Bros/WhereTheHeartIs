@@ -6,32 +6,84 @@ class Calculator:
 
     @staticmethod
     def calculate_mortgage_payments(home_price, down_payment_percent, loan_term_years, interest_rate_exact,
-                                    interest_rate_start, interest_rate_end, interest_rate_step):
+                                    interest_rate_start, interest_rate_end, interest_rate_step, cash_savings,
+                                    moving_cost, closing_cost_estimation=0.03):
         # Calculate the loan amount
         down_payment = home_price * (down_payment_percent / 100)
         loan_amount = home_price - down_payment
 
         # Initialize the data dictionary
-        data = {}
+        data = {
+            'Home Price': home_price,
+            'Down Payment': down_payment,
+            'Loan Amount': loan_amount,
+            'Down Payment Percent': down_payment_percent,
+            'Loan Term (Years)': loan_term_years,
+            'Interest Rate Exact': interest_rate_exact,
+            'Interest Rate Start': interest_rate_start,
+            'Interest Rate End': interest_rate_end,
+            'Interest Rate Step': interest_rate_step,
+            'Cash Savings': cash_savings,
+            'Moving Costs': moving_cost,
+            'Closing Cost Estimation': closing_cost_estimation,
+            'Interest Rates': [],
+            'PMI': 0,
+            'Closing Costs': 0,
+            'Total Cash Required': 0,
+            'Remaining Cash Savings': 0,
+            'Total Cost of Loan': 0
+        }
+
+        # Determine if PMI is required
+        pmi_required = down_payment_percent < 20
+        # If PMI is required, calculate the PMI payment
+        pmi_payment = 0
+        if pmi_required:
+            pmi_rate = 0.005
+            pmi_payment = loan_amount * pmi_rate / 12
+            data['PMI'] = pmi_payment
+
+        # TODO: Add property tax and insurance estimation
 
         # Calculate payments for the exact interest rate
         monthly_interest_rate = (interest_rate_exact / 100) / 12
         loan_term_months = loan_term_years * 12
+        # monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) / (
+        #         (1 + monthly_interest_rate) ** loan_term_months - 1)
         monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) / (
-                (1 + monthly_interest_rate) ** loan_term_months - 1)
+                (1 + monthly_interest_rate) ** loan_term_months - 1) + (pmi_payment if pmi_required else 0)
         # Store the exact interest rate with a True flag in the dictionary
-        data[interest_rate_exact] = {'Monthly Payment': monthly_payment, 'Is Exact Rate': True}
+        data['Interest Rates'].append(
+            {'Interest Rate': interest_rate_exact, 'Monthly Payment': monthly_payment, 'Is Exact Rate': True})
 
-        # Calculate payments for each interest rate   in the range
+        # Calculate payments for each interest rate in the range
         interest_rate = interest_rate_start
         while interest_rate <= interest_rate_end:
             monthly_interest_rate = (interest_rate / 100) / 12
-            monthly_payment = loan_amount * (
-                    monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) / (
-                                      (1 + monthly_interest_rate) ** loan_term_months - 1)
+            monthly_payment = (loan_amount * (
+                    monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) /
+                               ((1 + monthly_interest_rate) ** loan_term_months - 1) +
+                               (pmi_payment if pmi_required else 0))
             # Store each interest rate with a False flag in the dictionary
-            data[interest_rate] = {'Monthly Payment': monthly_payment, 'Is Exact Rate': False}
+            data['Interest Rates'].append(
+                {'Interest Rate': interest_rate, 'Monthly Payment': monthly_payment, 'Is Exact Rate': False})
             interest_rate += interest_rate_step
+
+        # Calculate closing costs
+        closing_costs = closing_cost_estimation * home_price
+        data['Closing Costs'] = closing_costs
+
+        # Calculate the total cash required to close
+        total_cash_required = down_payment + closing_costs + moving_cost
+        data['Total Cash Required'] = total_cash_required
+
+        # Calculate the remaining cash savings after closing
+        remaining_cash_savings = cash_savings - total_cash_required
+        data['Remaining Cash Savings'] = remaining_cash_savings
+
+        # Calculate the total cost of the loan
+        total_cost_of_loan = monthly_payment * loan_term_months
+        data['Total Cost of Loan'] = total_cost_of_loan
 
         return data
 
@@ -39,15 +91,12 @@ class Calculator:
 class Plotter:
 
     @staticmethod
-    def construct_mortgage_payment_plot(results):
+    def construct_mortgage_payment_plot(ax, data):
         # Extracting data for plotting
-        interest_rates = list(results.keys())
-        payments = [results[rate]['Monthly Payment'] for rate in interest_rates]
-        exact_rates = [rate for rate in interest_rates if results[rate]['Is Exact Rate']]
-        exact_payments = [results[rate]['Monthly Payment'] for rate in exact_rates]
-
-        # Create figure and axis objects
-        fig, ax = plt.subplots(figsize=(10, 6))
+        interest_rates = [entry['Interest Rate'] for entry in data['Interest Rates']]
+        payments = [entry['Monthly Payment'] for entry in data['Interest Rates']]
+        exact_rates = [entry['Interest Rate'] for entry in data['Interest Rates'] if entry['Is Exact Rate']]
+        exact_payments = [entry['Monthly Payment'] for entry in data['Interest Rates'] if entry['Is Exact Rate']]
 
         # Plot projected payments with markers
         ax.plot(interest_rates, payments, label='Projected Payments', marker='o', linestyle='', color='blue')
@@ -78,6 +127,68 @@ class Plotter:
         ax.set_ylabel('Monthly Mortgage Payment ($)')
         ax.grid(True)
         ax.legend()
+
+    @staticmethod
+    def construct_summary_graphs(data):
+        # Visualize the data not in the Mortgage Payments by Interest Rate plot
+
+        # Show the data in a bar chart
+        fig, ax = plt.subplots(2, 2, figsize=(20, 18))
+        fig.subplots_adjust(hspace=0.4)
+
+        # Compare the total cost of the loan, to loan amount and home price
+        loan_comparison = ax[0, 0]
+        loan_comparison.bar(['Total Cost of Loan', 'Home Price', 'Loan Amount', ],
+                            [data['Total Cost of Loan'], data['Home Price'], data['Loan Amount']],
+                            color=['blue', 'green', 'red'])
+        loan_comparison.set_title('Loan Cost Comparison')
+        loan_comparison.set_ylabel('Amount ($)')
+        loan_comparison.grid(False)
+        # Add annotations to the bar chart for the exact values
+        for i, value in enumerate([data['Total Cost of Loan'], data['Home Price'], data['Loan Amount']]):
+            loan_comparison.annotate(f"${value:,.2f}", (i, value), textcoords="offset points", xytext=(0, -15),
+                                     ha='center')
+
+        # Show the total cash required in a pie chart
+        total_cash = ax[0, 1]
+        slices, texts, autotexts = total_cash.pie([data['Down Payment'], data['Closing Costs'], data['Moving Costs']],
+                                                  labels=['Down Payment', 'Closing Costs', 'Moving Costs'],
+                                                  autopct=lambda pct: "{:.1f}%".format(pct),
+                                                  colors=['blue', 'green', 'red'],
+                                                  textprops={'fontsize': 10})
+        total_cash.set_title(f"Total Cash Required to Close: ${data['Total Cash Required']:,.0f}")
+        total_cash.axis('equal')
+        # Modify autotexts to include absolute values alongside percentages
+        for autotext, value in zip(autotexts, [data['Down Payment'], data['Closing Costs'], data['Moving Costs']]):
+            pct_value = float(
+                autotext.get_text().replace('%', ''))  # Extract the numerical value from the percentage text
+            new_text = f"${value:,.0f} | {pct_value:.1f}%"
+            autotext.set_text(new_text)
+
+        # Show pie chart makmeeup of monthly mortgage principal and interest paynt, PMI, taxes, and insurance for total monthly housing cost
+        # TODO: Add property tax and insurance estimation to the data dictionary
+        total_monthly_cost = data['Interest Rates'][0]['Monthly Payment']
+        total_monthly_cost_breakdown = [total_monthly_cost, data['PMI'], 0, 0]
+        total_monthly_cost_breakdown_labels = ['Principal & Interest', 'PMI', 'Property Tax', 'Insurance']
+        total_monthly_cost_breakdown_colors = ['blue', 'green', 'red', 'purple']
+        monthly_cost = ax[1, 0]
+        slices, texts, autotexts = monthly_cost.pie(total_monthly_cost_breakdown,
+                                                    labels=total_monthly_cost_breakdown_labels,
+                                                    autopct=lambda pct: "{:.1f}%".format(pct),
+                                                    colors=total_monthly_cost_breakdown_colors)
+        monthly_cost.set_title(f"Total Monthly Housing Cost: ${total_monthly_cost:,.2f}")
+        monthly_cost.axis('equal')
+        monthly_cost.grid(False)
+        # Modify autotexts for the second pie chart
+        for autotext, value in zip(autotexts, total_monthly_cost_breakdown):
+            pct_value = float(autotext.get_text().replace('%', ''))
+            new_text = f"${value:,.2f} | {pct_value:.1f}%"
+            autotext.set_text(new_text)
+
+        # Show the construct_mortgage_payment_plot in the last subplot
+        mortgage_payment_plot = ax[1, 1]
+        Plotter.construct_mortgage_payment_plot(mortgage_payment_plot, data)
+
 
         # Return the figure and axis objects for further manipulation
         return fig, ax
@@ -124,12 +235,12 @@ class WidgetHelpers:
     @staticmethod
     def create_mortgage_payment_calculator_widgets():
         slider_configs = {
-            'home_price': {'value': None, 'default_value': 250000, 'min': 150000, 'max': 300000, 'step': 5000,
+            'home_price': {'value': None, 'default_value': 225000, 'min': 150000, 'max': 300000, 'step': 1000,
                            'description': 'Home Price', 'readout': False, 'precision': 0, 'prepend': '$', 'append': ''},
             'down_payment_percent': {'value': None, 'default_value': 5, 'min': 0, 'max': 30, 'step': 1,
                                      'description': 'Down Payment',
                                      'readout': False, 'precision': 2, 'prepend': '', 'append': '%'},
-            'loan_term_years': {'value': None, 'default_value': 30, 'min': 15, 'max': 30, 'step': 5,
+            'loan_term_years': {'value': None, 'default_value': 30, 'min': 15, 'max': 30, 'step': 15,
                                 'description': 'Loan Term',
                                 'readout': False, 'precision': 0, 'prepend': '', 'append': ' years'},
             'interest_rate_exact': {'value': None, 'default_value': 7.38, 'min': 2, 'max': 8, 'step': 0.01,
@@ -144,6 +255,12 @@ class WidgetHelpers:
             'interest_rate_step': {'value': None, 'default_value': 0.50, 'min': 0, 'max': 1, 'step': 0.25,
                                    'description': 'Interest Rate Step', 'readout': False, 'precision': 2, 'prepend': '',
                                    'append': '%'},
+            'cash_savings': {'value': None, 'default_value': 15000, 'min': 0, 'max': 80000, 'step': 500,
+                             'description': 'Cash Savings', 'readout': False, 'precision': 0, 'prepend': '$',
+                             'append': ''},
+            'moving_cost': {'value': None, 'default_value': 1200, 'min': 0, 'max': 3000, 'step': 50,
+                            'description': 'Moving Costs', 'readout': False, 'precision': 0, 'prepend': '$',
+                            'append': ''},
         }
 
         widgets_dict = {}
