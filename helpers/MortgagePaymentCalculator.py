@@ -143,7 +143,7 @@ class Plotter:
         # Visualize the data not in the Mortgage Payments by Interest Rate plot
 
         # Show the data in a bar chart
-        fig, ax = plt.subplots(2, 2, figsize=(20, 18))
+        fig, ax = plt.subplots(2, 2, figsize=(15, 15))
         fig.suptitle('Mortgage Payment Calculator Summary', fontsize=20)
         # First row has two plots side by side
         # Second row has two plots side by side
@@ -218,7 +218,7 @@ class WidgetHelpers:
                 .widget-button { width: 300px !important; margin: 10px 0px; }
                 .widget-text { width: 300px !important; }
                 .widget-select { width: 300px !important; }
-                .widget-output { height: 340px !important; }
+                .widget-output { height: 100% !important; }
             </style>
             """
 
