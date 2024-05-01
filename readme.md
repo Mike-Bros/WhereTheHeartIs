@@ -21,3 +21,4 @@ Jupyter notebook that can be run locally.
 - **Customization**: Easily adjustable parameters to match any specific home buying scenario or financial condition.
 - **Responsive Output**: Real-time updates to calculations and visualizations as input parameters are adjusted.
 
+![Feature Demo](https://raw.githubusercontent.com/Mike-Bros/WhereTheHeartIs/main/assets/demo.gif "Feature Demo")
