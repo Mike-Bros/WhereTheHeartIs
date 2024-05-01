@@ -43,7 +43,17 @@ class Calculator:
             pmi_payment = loan_amount * pmi_rate / 12
             data['PMI'] = pmi_payment
 
-        # TODO: Add property tax and insurance estimation
+        # Calculate property tax
+        # 1.23% is Minneapolis average property tax rate
+        assessed_value = home_price
+        property_tax_rate = 0.0123
+        property_tax = assessed_value * property_tax_rate / 12
+        data['Property Tax'] = property_tax
+
+        # Calculate insurance
+        # National average is $1,915 per year
+        insurance = 1915 / 12
+        data['Insurance'] = insurance
 
         # Calculate payments for the exact interest rate
         monthly_interest_rate = (interest_rate_exact / 100) / 12
@@ -74,7 +84,7 @@ class Calculator:
         data['Closing Costs'] = closing_costs
 
         # Calculate the total cash required to close
-        total_cash_required = down_payment + closing_costs + moving_cost
+        total_cash_required = down_payment + closing_costs + moving_cost + property_tax + insurance
         data['Total Cash Required'] = total_cash_required
 
         # Calculate the remaining cash savings after closing
@@ -134,44 +144,16 @@ class Plotter:
 
         # Show the data in a bar chart
         fig, ax = plt.subplots(2, 2, figsize=(20, 18))
-        fig.subplots_adjust(hspace=0.4)
+        fig.suptitle('Mortgage Payment Calculator Summary', fontsize=20)
+        # First row has two plots side by side
+        # Second row has two plots side by side
 
-        # Compare the total cost of the loan, to loan amount and home price
-        loan_comparison = ax[0, 0]
-        loan_comparison.bar(['Total Cost of Loan', 'Home Price', 'Loan Amount', ],
-                            [data['Total Cost of Loan'], data['Home Price'], data['Loan Amount']],
-                            color=['blue', 'green', 'red'])
-        loan_comparison.set_title('Loan Cost Comparison')
-        loan_comparison.set_ylabel('Amount ($)')
-        loan_comparison.grid(False)
-        # Add annotations to the bar chart for the exact values
-        for i, value in enumerate([data['Total Cost of Loan'], data['Home Price'], data['Loan Amount']]):
-            loan_comparison.annotate(f"${value:,.2f}", (i, value), textcoords="offset points", xytext=(0, -15),
-                                     ha='center')
-
-        # Show the total cash required in a pie chart
-        total_cash = ax[0, 1]
-        slices, texts, autotexts = total_cash.pie([data['Down Payment'], data['Closing Costs'], data['Moving Costs']],
-                                                  labels=['Down Payment', 'Closing Costs', 'Moving Costs'],
-                                                  autopct=lambda pct: "{:.1f}%".format(pct),
-                                                  colors=['blue', 'green', 'red'],
-                                                  textprops={'fontsize': 10})
-        total_cash.set_title(f"Total Cash Required to Close: ${data['Total Cash Required']:,.0f}")
-        total_cash.axis('equal')
-        # Modify autotexts to include absolute values alongside percentages
-        for autotext, value in zip(autotexts, [data['Down Payment'], data['Closing Costs'], data['Moving Costs']]):
-            pct_value = float(
-                autotext.get_text().replace('%', ''))  # Extract the numerical value from the percentage text
-            new_text = f"${value:,.0f} | {pct_value:.1f}%"
-            autotext.set_text(new_text)
-
-        # Show pie chart makmeeup of monthly mortgage principal and interest paynt, PMI, taxes, and insurance for total monthly housing cost
-        # TODO: Add property tax and insurance estimation to the data dictionary
+        # Show pie chart of monthly mortgage principal and interest paynt, PMI, taxes, and insurance for total monthly housing cost
         total_monthly_cost = data['Interest Rates'][0]['Monthly Payment']
-        total_monthly_cost_breakdown = [total_monthly_cost, data['PMI'], 0, 0]
+        total_monthly_cost_breakdown = [total_monthly_cost, data['PMI'], data['Property Tax'], data['Insurance']]
         total_monthly_cost_breakdown_labels = ['Principal & Interest', 'PMI', 'Property Tax', 'Insurance']
         total_monthly_cost_breakdown_colors = ['blue', 'green', 'red', 'purple']
-        monthly_cost = ax[1, 0]
+        monthly_cost = ax[0, 0]
         slices, texts, autotexts = monthly_cost.pie(total_monthly_cost_breakdown,
                                                     labels=total_monthly_cost_breakdown_labels,
                                                     autopct=lambda pct: "{:.1f}%".format(pct),
@@ -186,9 +168,37 @@ class Plotter:
             autotext.set_text(new_text)
 
         # Show the construct_mortgage_payment_plot in the last subplot
-        mortgage_payment_plot = ax[1, 1]
+        mortgage_payment_plot = ax[0, 1]
         Plotter.construct_mortgage_payment_plot(mortgage_payment_plot, data)
 
+        # Compare the total cost of the loan, to loan amount and home price
+        loan_comparison = ax[1, 0]
+        loan_comparison.bar(['Total Cost of Loan', 'Home Price', 'Loan Amount', ],
+                            [data['Total Cost of Loan'], data['Home Price'], data['Loan Amount']],
+                            color=['blue', 'green', 'red'])
+        loan_comparison.set_title('Loan Cost Comparison')
+        loan_comparison.set_ylabel('Amount ($)')
+        loan_comparison.grid(False)
+        # Add annotations to the bar chart for the exact values
+        for i, value in enumerate([data['Total Cost of Loan'], data['Home Price'], data['Loan Amount']]):
+            loan_comparison.annotate(f"${value:,.2f}", (i, value), textcoords="offset points", xytext=(0, -15),
+                                     ha='center')
+
+        # Show the total cash required in a pie chart
+        total_cash = ax[1, 1]
+        slices, texts, autotexts = total_cash.pie([data['Down Payment'], data['Closing Costs'], data['Moving Costs']],
+                                                  labels=['Down Payment', 'Closing Costs', 'Moving Costs'],
+                                                  autopct=lambda pct: "{:.1f}%".format(pct),
+                                                  colors=['blue', 'green', 'red'],
+                                                  textprops={'fontsize': 10})
+        total_cash.set_title(f"Total Cash Required to Close: ${data['Total Cash Required']:,.0f}")
+        total_cash.axis('equal')
+        # Modify autotexts to include absolute values alongside percentages
+        for autotext, value in zip(autotexts, [data['Down Payment'], data['Closing Costs'], data['Moving Costs']]):
+            pct_value = float(
+                autotext.get_text().replace('%', ''))  # Extract the numerical value from the percentage text
+            new_text = f"${value:,.0f} | {pct_value:.1f}%"
+            autotext.set_text(new_text)
 
         # Return the figure and axis objects for further manipulation
         return fig, ax
