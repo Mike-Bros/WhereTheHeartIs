@@ -1,6 +1,6 @@
 # Where The Heart Is
 
-[![Where The Heart Is Logo](https://raw.githubusercontent.com/Mike-Bros/WhereTheHeartIs/assets/logo.png)]
+![Where The Heart Is Logo](https://raw.githubusercontent.com/Mike-Bros/WhereTheHeartIs/main/assets/logo.png)
 
 ## Overview
 
