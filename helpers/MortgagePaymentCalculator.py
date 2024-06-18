@@ -4,6 +4,7 @@ import ipywidgets as widgets
 
 class Calculator:
 
+
     @staticmethod
     def calculate_mortgage_payments(home_price, down_payment_percent, loan_term_years, interest_rate_exact,
                                     interest_rate_start, interest_rate_end, interest_rate_step, cash_savings,
@@ -11,6 +12,9 @@ class Calculator:
         # Calculate the loan amount
         down_payment = home_price * (down_payment_percent / 100)
         loan_amount = home_price - down_payment
+        loan_term_months = loan_term_years * 12
+        monthly_interest_rate = (interest_rate_exact / 100) / 12
+        monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) / ((1 + monthly_interest_rate) ** loan_term_months - 1)
 
         # Initialize the data dictionary
         data = {
@@ -34,14 +38,45 @@ class Calculator:
             'Total Cost of Loan': 0
         }
 
-        # Determine if PMI is required
-        pmi_required = down_payment_percent < 20
-        # If PMI is required, calculate the PMI payment
-        pmi_payment = 0
+        # Determine if PMI is required based on the loan-to-value ratio
+        ltv_ratio = loan_amount / home_price
+        pmi_ltv_dropoff = 0.80
+        pmi_required = ltv_ratio > pmi_ltv_dropoff
+
         if pmi_required:
-            pmi_rate = 0.005
+            current_balance = loan_amount
+            pmi_rate = 0.01  # PMI rate is typically about 1% of the loan amount per year
+            pmi_months = 0
+            total_pmi_paid = 0
+
+            while ltv_ratio > pmi_ltv_dropoff:
+                # Calculate interest and principal for the current month from the payment
+                interest = current_balance * (monthly_interest_rate / 12)
+                principal = monthly_payment - interest - (current_balance * pmi_rate / 12)
+
+                # Update the loan amount
+                current_balance -= principal
+                current_ltv = current_balance / home_price
+
+                # Add the PMI payment to the total
+                total_pmi_paid += current_balance * pmi_rate / 12
+
+                # Check if the LTV ratio has dropped below the threshold
+                if current_ltv <= pmi_ltv_dropoff:
+                    break
+
+                # Increment the number of months
+                pmi_months += 1
+
+            data['PMI Dropoff Months'] = pmi_months
+            data['PMI Total Paid'] = total_pmi_paid
+            # monthly_payment += loan_amount * pmi_rate / 12  # Add PMI to the monthly payment
             pmi_payment = loan_amount * pmi_rate / 12
             data['PMI'] = pmi_payment
+            data['PMI Dropoff Ratio'] = current_ltv
+        else:
+            data['PMI Dropoff Months'] = 0
+            data['PMI Total Paid'] = 0
 
         # Calculate property tax
         # 1.23% is Minneapolis average property tax rate
@@ -56,13 +91,9 @@ class Calculator:
         data['Insurance'] = insurance
 
         # Calculate payments for the exact interest rate
-        monthly_interest_rate = (interest_rate_exact / 100) / 12
-        loan_term_months = loan_term_years * 12
-        # monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) / (
-        #         (1 + monthly_interest_rate) ** loan_term_months - 1)
         monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** loan_term_months) / (
                 (1 + monthly_interest_rate) ** loan_term_months - 1) + (pmi_payment if pmi_required else 0)
-        # Store the exact interest rate with a True flag in the dictionary
+        # Store the exact interest rate with a True flag in the dictionary1
         data['Interest Rates'].append(
             {'Interest Rate': interest_rate_exact, 'Monthly Payment': monthly_payment, 'Is Exact Rate': True})
 
@@ -143,14 +174,15 @@ class Plotter:
         # Visualize the data not in the Mortgage Payments by Interest Rate plot
 
         # Show the data in a bar chart
-        fig, ax = plt.subplots(2, 2, figsize=(15, 15))
+        fig, ax = plt.subplots(3, 2, figsize=(15, 15))
         fig.suptitle('Mortgage Payment Calculator Summary', fontsize=20)
         # First row has two plots side by side
         # Second row has two plots side by side
 
-        # Show pie chart of monthly mortgage principal and interest paynt, PMI, taxes, and insurance for total monthly housing cost
-        total_monthly_cost = data['Interest Rates'][0]['Monthly Payment']
-        total_monthly_cost_breakdown = [total_monthly_cost, data['PMI'], data['Property Tax'], data['Insurance']]
+        # Show pie chart of monthly mortgage principal and interest paynt, PMI, taxes, and insurance for total monthly housing cos
+        total_monthly_cost_breakdown = [data['Interest Rates'][0]['Monthly Payment']-data['PMI'], data['PMI'], data['Property Tax'],
+                                        data['Insurance']]
+        total_monthly_cost = sum(total_monthly_cost_breakdown)
         total_monthly_cost_breakdown_labels = ['Principal & Interest', 'PMI', 'Property Tax', 'Insurance']
         total_monthly_cost_breakdown_colors = ['blue', 'green', 'red', 'purple']
         monthly_cost = ax[0, 0]
@@ -200,6 +232,35 @@ class Plotter:
             new_text = f"${value:,.0f} | {pct_value:.1f}%"
             autotext.set_text(new_text)
 
+        # Visualize PMI data
+        pmi_costs = ax[2, 0]
+        pmi_costs.bar(['PMI Total Paid', 'PMI Monthly'],
+                     [data['PMI Total Paid'], data['PMI']],
+                     color=['blue', 'green'])
+        pmi_costs.set_title('PMI Costs')
+        pmi_costs.set_ylabel('Amount ($)')
+        pmi_costs.grid(False)
+        # Add annotations to the bar chart for the exact values
+        max_value = max(data['PMI Total Paid'], data['PMI'])
+        for i, value in enumerate([data['PMI Total Paid'], data['PMI']]):
+            if value < max_value * 0.1:
+                # If the value is less than 10% of the max value, place the annotation above the bar
+                pmi_costs.annotate(f"${value:,.2f}", (i, value), textcoords="offset points", xytext=(0, 10),
+                                  ha='center')
+            else:
+                # Otherwise, place the annotation inside the bar
+                pmi_costs.annotate(f"${value:,.2f}", (i, value), textcoords="offset points", xytext=(0, -15),
+                                  ha='center')
+
+        misc_info = ax[2, 1]
+        misc_info.axis('off')
+        misc_info.set_title('Additional Information')
+        misc_info.text(0, 0.9, f"PMI Dropoff Ratio: {data['PMI Dropoff Ratio']:.2f}")
+        misc_info.text(0, 0.8, f"PMI Dropoff Months: {data['PMI Dropoff Months']}")
+        misc_info.text(0, 0.7, f"Remaining Cash Savings: ${data['Remaining Cash Savings']:,.0f}")
+
+
+
         # Return the figure and axis objects for further manipulation
         return fig, ax
 
@@ -245,7 +306,7 @@ class WidgetHelpers:
     @staticmethod
     def create_mortgage_payment_calculator_widgets():
         slider_configs = {
-            'home_price': {'value': None, 'default_value': 225000, 'min': 150000, 'max': 300000, 'step': 1000,
+            'home_price': {'value': None, 'default_value': 225000, 'min': 150000, 'max': 800000, 'step': 1000,
                            'description': 'Home Price', 'readout': False, 'precision': 0, 'prepend': '$', 'append': ''},
             'down_payment_percent': {'value': None, 'default_value': 5, 'min': 0, 'max': 30, 'step': 1,
                                      'description': 'Down Payment',
@@ -253,17 +314,17 @@ class WidgetHelpers:
             'loan_term_years': {'value': None, 'default_value': 30, 'min': 15, 'max': 30, 'step': 15,
                                 'description': 'Loan Term',
                                 'readout': False, 'precision': 0, 'prepend': '', 'append': ' years'},
-            'interest_rate_exact': {'value': None, 'default_value': 7.38, 'min': 2, 'max': 8, 'step': 0.01,
+            'interest_rate_exact': {'value': None, 'default_value': 7.2, 'min': 2, 'max': 8, 'step': 0.01,
                                     'description': 'Interest Rate', 'readout': False, 'precision': 2, 'prepend': '',
                                     'append': '%'},
             'interest_rate_start': {'value': None, 'default_value': 2, 'min': 1, 'max': 4, 'step': 0.25,
-                                    'description': 'Interest Rate Start', 'readout': False, 'precision': 2,
+                                    'description': 'Interest Range Start', 'readout': False, 'precision': 2,
                                     'prepend': '', 'append': '%'},
             'interest_rate_end': {'value': None, 'default_value': 8, 'min': 4, 'max': 10, 'step': 0.25,
-                                  'description': 'Interest Rate End', 'readout': False, 'precision': 2, 'prepend': '',
+                                  'description': 'Interest Range End', 'readout': False, 'precision': 2, 'prepend': '',
                                   'append': '%'},
             'interest_rate_step': {'value': None, 'default_value': 0.50, 'min': 0, 'max': 1, 'step': 0.25,
-                                   'description': 'Interest Rate Step', 'readout': False, 'precision': 2, 'prepend': '',
+                                   'description': 'Interest Range Step', 'readout': False, 'precision': 2, 'prepend': '',
                                    'append': '%'},
             'cash_savings': {'value': None, 'default_value': 15000, 'min': 0, 'max': 80000, 'step': 500,
                              'description': 'Cash Savings', 'readout': False, 'precision': 0, 'prepend': '$',
