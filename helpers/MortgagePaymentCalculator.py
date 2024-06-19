@@ -234,7 +234,8 @@ class Plotter:
                                                     textprops={'fontsize': 8, 'style': 'italic', 'weight': 'bold'},
                                                     autopct=lambda pct: "{:.1f}%".format(pct),
                                                     colors=total_monthly_cost_breakdown_colors)
-        monthly_cost.set_title(f"Total Monthly Housing Cost: ${total_monthly_cost:,.2f}", fontsize=16, fontweight='bold')
+        monthly_cost.set_title(f"Total Monthly Housing Cost: ${total_monthly_cost:,.2f}", fontsize=16,
+                               fontweight='bold')
         monthly_cost.axis('equal')
         monthly_cost.grid(False)
         for autotext, value in zip(autotexts, total_monthly_cost_breakdown):
@@ -264,8 +265,9 @@ class Plotter:
                                                   labels=['Down Payment', 'Closing Costs', 'Moving Costs'],
                                                   textprops={'fontsize': 8, 'style': 'italic', 'weight': 'bold'},
                                                   autopct=lambda pct: "{:.1f}%".format(pct),
-                                                  colors=['blue', 'green', 'red'],)
-        total_cash.set_title(f"Total Cash Required to Close: ${data['Total Cash Required']:,.0f}", fontsize=16, fontweight='bold')
+                                                  colors=['blue', 'green', 'red'], )
+        total_cash.set_title(f"Total Cash Required to Close: ${data['Total Cash Required']:,.0f}", fontsize=16,
+                             fontweight='bold')
         total_cash.axis('equal')
         total_cash.grid(False)
         for autotext, value in zip(autotexts, [data['Down Payment'], data['Closing Costs'], data['Moving Costs']]):
@@ -315,86 +317,3 @@ class Plotter:
 
         # Return the figure and axis objects for further manipulation
         return fig, ax
-
-
-class WidgetHelpers:
-    def __init__(self):
-        self.calculator_widgets = self.create_mortgage_payment_calculator_widgets()
-        self.graph_output = widgets.Output()
-
-    @staticmethod
-    def style_css():
-        return """
-        <style>
-            .widget-label { width: 20ex !important; }
-                .widget-slider { width: 60% !important; }
-                .widget-button { width: 300px !important; margin: 10px 0px; }
-                .widget-text { width: 300px !important; }
-                .widget-select { width: 300px !important; }
-                .widget-output { height: 100% !important; }
-            </style>
-            """
-
-    @staticmethod
-    def update_label(value, precision=2, prepend='', append=''):
-        return f"{prepend}{value:.{precision}f}{append}"
-
-    @staticmethod
-    def on_value_change(change, label, config):
-        label.value = WidgetHelpers.update_label(change['new'], config['precision'], config['prepend'],
-                                                 config['append'])
-
-    @staticmethod
-    def create_slider(config):
-        slider = widgets.FloatSlider(
-            value=config['default_value'], min=config['min'], max=config['max'],
-            step=config['step'], description=config['description'], readout=config['readout']
-        )
-        label = widgets.Label(
-            WidgetHelpers.update_label(slider.value, config['precision'], config['prepend'], config['append']))
-        slider.observe(lambda change: WidgetHelpers.on_value_change(change, label, config), names='value')
-        return slider, label
-
-    @staticmethod
-    def create_mortgage_payment_calculator_widgets():
-        slider_configs = {
-            'home_price': {'value': None, 'default_value': 225000, 'min': 150000, 'max': 800000, 'step': 1000,
-                           'description': 'Home Price', 'readout': False, 'precision': 0, 'prepend': '$', 'append': ''},
-            'down_payment_percent': {'value': None, 'default_value': 5, 'min': 0, 'max': 30, 'step': 1,
-                                     'description': 'Down Payment',
-                                     'readout': False, 'precision': 2, 'prepend': '', 'append': '%'},
-            'loan_term_years': {'value': None, 'default_value': 30, 'min': 15, 'max': 30, 'step': 15,
-                                'description': 'Loan Term',
-                                'readout': False, 'precision': 0, 'prepend': '', 'append': ' years'},
-            'interest_rate_exact': {'value': None, 'default_value': 7.2, 'min': 2, 'max': 8, 'step': 0.01,
-                                    'description': 'Interest Rate', 'readout': False, 'precision': 2, 'prepend': '',
-                                    'append': '%'},
-            'interest_rate_start': {'value': None, 'default_value': 2, 'min': 1, 'max': 4, 'step': 0.25,
-                                    'description': 'Interest Range Start', 'readout': False, 'precision': 2,
-                                    'prepend': '', 'append': '%'},
-            'interest_rate_end': {'value': None, 'default_value': 8, 'min': 4, 'max': 10, 'step': 0.25,
-                                  'description': 'Interest Range End', 'readout': False, 'precision': 2, 'prepend': '',
-                                  'append': '%'},
-            'interest_rate_step': {'value': None, 'default_value': 0.50, 'min': 0, 'max': 1, 'step': 0.25,
-                                   'description': 'Interest Range Step', 'readout': False, 'precision': 2, 'prepend': '',
-                                   'append': '%'},
-            'cash_savings': {'value': None, 'default_value': 15000, 'min': 0, 'max': 80000, 'step': 500,
-                             'description': 'Cash Savings', 'readout': False, 'precision': 0, 'prepend': '$',
-                             'append': ''},
-            'moving_cost': {'value': None, 'default_value': 1200, 'min': 0, 'max': 3000, 'step': 50,
-                            'description': 'Moving Costs', 'readout': False, 'precision': 0, 'prepend': '$',
-                            'append': ''},
-        }
-
-        widgets_dict = {}
-        for key, config in slider_configs.items():
-            slider, label = WidgetHelpers.create_slider(config)
-            widgets_dict[key] = {'slider': slider, 'label': label}
-
-        return widgets_dict
-
-    def get_calculator_widgets(self):
-        return self.calculator_widgets
-
-    def get_graph_output_widgets(self):
-        return self.graph_output

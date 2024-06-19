@@ -6,7 +6,7 @@ import io
 import base64
 import os
 from datetime import datetime
-from helpers.MortgagePaymentCalculator import Calculator, Plotter, WidgetHelpers
+from helpers.MortgagePaymentCalculator import Calculator, Plotter
 
 app = dash.Dash(__name__)
 
