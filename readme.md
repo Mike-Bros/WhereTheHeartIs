@@ -8,8 +8,8 @@
 
 ## Features
 
-- **Interactive Sliders**: Adjust variables like home price, down payment percentage, loan term, and interest rates to
-  see immediate updates on monthly mortgage payments.
+- **Fine-Tuned Input**: Simple and intuitive interface for inputting mortgage details, including loan amount, interest rate,
+  and loan term.
 - **Visualization**: Dynamic plotting of mortgage payments across a range of interest rates, highlighting specific
   scenarios for deeper analysis.
 - **Customization**: Easily adjustable parameters to match any specific home buying scenario or financial condition.
