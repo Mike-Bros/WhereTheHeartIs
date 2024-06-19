@@ -4,13 +4,7 @@
 
 ## Overview
 
-"Where The Heart Is" is a Python-based tool designed to aid prospective homebuyers in visualizing and calculating
-various mortgage scenarios. Built using Jupyter notebooks and a dedicated Python
-script (`MortgagePaymentCalculator.py`), this application provides a user-friendly interface to input different mortgage
-conditions and visualize the implications of different interest rates and loan terms on monthly payments.
-
-It's possible that I will adjust the platform someday to have a more user-friendly interface, but for now, it's a simple
-Jupyter notebook that can be run locally.
+"Where The Heart Is" is a Python-based tool designed to aid prospective homebuyers in visualizing and calculating various mortgage scenarios. Originally built using Jupyter notebooks, the project has now transitioned to a Dash-based web application, offering a more user-friendly and interactive interface. This application allows users to input different mortgage conditions and visualize the implications of varying interest rates and loan terms on monthly payments.
 
 ## Features
 
@@ -20,5 +14,6 @@ Jupyter notebook that can be run locally.
   scenarios for deeper analysis.
 - **Customization**: Easily adjustable parameters to match any specific home buying scenario or financial condition.
 - **Responsive Output**: Real-time updates to calculations and visualizations as input parameters are adjusted.
+- **Exportable Results**: Exports summary graphs and tables to SVG format for easy sharing and reference.
 
 ![Feature Demo](https://raw.githubusercontent.com/Mike-Bros/WhereTheHeartIs/main/assets/demo.gif "Feature Demo")
