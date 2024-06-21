@@ -41,6 +41,8 @@ def fig_to_uri(fig):
     fig.savefig(out_img, format='png')
     out_img.seek(0)
     encoded = base64.b64encode(out_img.read()).decode('ascii')
+    # Close fig to converse memory
+    plt.close(fig)
     return 'data:image/png;base64,{}'.format(encoded)
 
 
