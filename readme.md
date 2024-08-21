@@ -25,5 +25,3 @@ mortgage conditions and visualize the implications of varying interest rates and
 - [x] **Dark Mode Support**: Simple dark mode UI for better user experience, according to me.
 - [x] **Error Handling & Validation**: Robust input validation and meaningful error messages for incorrect or
   out-of-range inputs.
-
-Feel free to adjust the items based on what’s already implemented or what’s planned!
